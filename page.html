@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SPC Quotation Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body class="font-sans m-12">
+
+  <div class="mb-8">
+    <button onclick="newInvoice()" class="bg-blue-600 text-white px-4 py-2 rounded mb-4">إنشاء فاتورة جديدة</button>
+    <button onclick="generatePDF()" class="bg-green-600 text-white px-4 py-2 rounded mb-4 ml-2">توليد PDF</button>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block">Quotation Date</label>
+        <input id="dateInput" type="date" class="border p-2 w-full">
+      </div>
+      <div>
+        <label class="block">Company</label>
+        <select id="companyInput" class="border p-2 w-full">
+          <option value="">-- اختر الشركة --</option>
+          <option value="Al-Rida">Al-Rida</option>
+          <option value="Al-Riyad">Al-Riyad</option>
+          <option value="Nebras">Nebras</option>
+          <option value="Ranen">Ranen</option>
+          <option value="Anwar">Anwar</option>
+        </select>
+      </div>
+      <div>
+        <label class="block">Description</label>
+        <input id="descInput" type="text" placeholder="Item description" class="border p-2 w-full">
+      </div>
+      <div>
+        <label class="block">Quantity</label>
+        <input id="qtyInput" type="number" class="border p-2 w-full">
+      </div>
+      <div>
+        <label class="block">Unit Price</label>
+        <input id="priceInput" type="number" class="border p-2 w-full">
+      </div>
+    </div>
+    <button onclick="addRow()" class="bg-purple-600 text-white px-4 py-2 rounded">إضافة صف</button>
+  </div>
+
+  <div id="invoice" class="border p-6 bg-white max-w-[800px] mx-auto">
+    <div class="flex justify-between items-start mb-4">
+      <div class="flex flex-col">
+        <img src="SPC 03.png" alt="SPC Logo" class="w-40 mb-1">
+        <div class="text-sm">SOLUTION PORTAL COMPANY</div>
+      </div>
+      <div class="text-right italic text-sm">
+        SOLUTION PORTAL COMPANY <br>
+        YARMOK - 612 - <br>
+        BAGHDAD IRAQ
+      </div>
+    </div>
+
+    <div class="text-base mb-2 ">
+      <strong>Invoice No:</strong> <span id="invoiceNo"></span>
+    </div>
+    <div class="text-base mb-2 ">
+      <strong>Company:</strong> <span id="companyOut"></span>
+    </div>
+    <div class="text-base mb-4 ">
+      <strong>Quotation Date:</strong> <span id="quoteDateOut"></span>
+    </div>
+
+    <table class="w-full table-fixed border border-black border-collapse mb-12">
+      <thead>
+        <tr class="bg-gray-100">
+          <th class="border border-black p-2">DESCRIPTION</th>
+          <th class="border border-black p-2 text-center">QUANTITY</th>
+          <th class="border border-black p-2">UNIT PRICE</th>
+          <th class="border border-black p-2">AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody id="invoiceBody"></tbody>
+      <tfoot>
+        <tr class="bg-gray-700 text-white font-bold">
+          <td class="border border-black p-2 text-left" colspan="3">Total</td>
+          <td class="border border-black p-2" id="totalOut">0.00</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <script>
+    let total = 0;
+
+    function generateInvoiceNo() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      const h = String(now.getHours()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      return `PRC-${y}-${m}-${d}${h}${min}`;
+    }
+
+    function newInvoice() {
+      const dateInput = document.getElementById('dateInput').value;
+      const companyInput = document.getElementById('companyInput').value;
+
+      if (!dateInput) {
+        alert("يرجى إدخال تاريخ الفاتورة");
+        return;
+      }
+
+      if (!companyInput) {
+        alert("يرجى اختيار الشركة");
+        return;
+      }
+
+      document.getElementById('invoiceBody').innerHTML = '';
+      total = 0;
+      document.getElementById('totalOut').innerText = '0.00';
+
+      const invoiceNo = generateInvoiceNo();
+      document.getElementById('invoiceNo').innerText = invoiceNo;
+      document.getElementById('quoteDateOut').innerText = dateInput;
+      document.getElementById('companyOut').innerText = companyInput;
+
+      document.getElementById('descInput').value = '';
+      document.getElementById('qtyInput').value = '';
+      document.getElementById('priceInput').value = '';
+    }
+
+    function addRow() {
+      const desc = document.getElementById('descInput').value;
+      const qty = parseFloat(document.getElementById('qtyInput').value) || 0;
+      const price = parseFloat(document.getElementById('priceInput').value) || 0;
+      const amount = qty * price;
+
+      if (!desc || qty <= 0 || price <= 0) {
+        alert("الرجاء إدخال بيانات صحيحة للصف.");
+        return;
+      }
+
+      const tbody = document.getElementById('invoiceBody');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="border border-black p-2">${desc}</td>
+        <td class="border border-black p-2 text-center">${qty}</td>
+        <td class="border border-black p-2">${price.toFixed(2)}</td>
+        <td class="border border-black p-2">${amount.toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+
+      total += amount;
+      document.getElementById('totalOut').innerText = total.toFixed(2);
+
+      document.getElementById('descInput').value = '';
+      document.getElementById('qtyInput').value = '';
+      document.getElementById('priceInput').value = '';
+    }
+
+    function generatePDF() {
+      const element = document.getElementById('invoice');
+      const opt = {
+        margin: 10,
+        filename: 'SPC_Quotation.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+  </script>
+
+</body>
+</html>
